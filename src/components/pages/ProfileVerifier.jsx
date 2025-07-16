@@ -1,31 +1,36 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useVerificationSession } from "@/hooks/useVerificationSession";
-import Header from "@/components/organisms/Header";
-import FileUpload from "@/components/molecules/FileUpload";
+import ApperIcon from "@/components/ApperIcon";
+import Empty from "@/components/ui/Empty";
+import Error from "@/components/ui/Error";
+import Loading from "@/components/ui/Loading";
 import ProfileTable from "@/components/organisms/ProfileTable";
 import VerificationPanel from "@/components/organisms/VerificationPanel";
-import Loading from "@/components/ui/Loading";
-import Error from "@/components/ui/Error";
-import Empty from "@/components/ui/Empty";
+import Header from "@/components/organisms/Header";
+import FileUpload from "@/components/molecules/FileUpload";
+import Button from "@/components/atoms/Button";
 
 const ProfileVerifier = () => {
-  const {
-    profiles,
-    selectedProfile,
-    sessionData,
-    loading,
-    error,
-    currentIndex,
-    handleFileUpload,
-    handleProfileSelect,
-    handleVerify,
-    handleNext,
-    handlePrevious,
-    handleExport,
-    handleReset,
-    loadProfiles
-  } = useVerificationSession();
+    const {
+      profiles,
+      selectedProfile,
+      sessionData,
+      loading,
+      error,
+      currentIndex,
+      handleFileUpload,
+      handleProfileSelect,
+      handleVerify,
+      handleNext,
+      handlePrevious,
+      handleExport,
+      handleReset,
+      loadProfiles
+    } = useVerificationSession();
+
+    const [selectedProfiles, setSelectedProfiles] = React.useState([]);
+    const [bulkLoading, setBulkLoading] = React.useState(false);
 
   if (loading) {
     return (
@@ -49,7 +54,7 @@ const ProfileVerifier = () => {
     );
   }
 
-  if (profiles.length === 0) {
+if (profiles.length === 0) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -67,6 +72,57 @@ const ProfileVerifier = () => {
       </div>
     );
   }
+  const handleBulkVerification = async (status) => {
+    if (selectedProfiles.length === 0) return;
+    
+    setBulkLoading(true);
+    try {
+      const { profileService } = await import("@/services/api/profileService");
+      const updatedProfiles = await profileService.default.bulkUpdateVerificationStatus(selectedProfiles, status);
+      
+      // Update profiles state
+      const updatedProfilesMap = new Map(updatedProfiles.map(p => [p.Id, p]));
+      const newProfiles = profiles.map(p => updatedProfilesMap.get(p.Id) || p);
+      
+      // Update the verification session with new profiles
+      const event = new CustomEvent('profilesUpdated', { detail: newProfiles });
+      window.dispatchEvent(event);
+      
+      // Clear selections
+      setSelectedProfiles([]);
+      
+      // Auto-advance to next unverified profile if current is in bulk update
+      if (selectedProfile && selectedProfiles.includes(selectedProfile.Id)) {
+        const nextProfile = newProfiles.find(p => 
+          !selectedProfiles.includes(p.Id) && !p.verificationStatus
+        );
+        if (nextProfile) {
+          handleProfileSelect(nextProfile);
+        }
+      }
+      
+    } catch (err) {
+      console.error('Bulk verification failed:', err);
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleSelectionChange = (newSelectedProfiles) => {
+    setSelectedProfiles(newSelectedProfiles);
+  };
+
+  // Listen for profile updates from bulk operations
+  React.useEffect(() => {
+    const handleProfilesUpdate = (event) => {
+      // This would typically be handled by the verification session hook
+      // For now, we'll trigger a reload
+      loadProfiles();
+    };
+    
+    window.addEventListener('profilesUpdated', handleProfilesUpdate);
+    return () => window.removeEventListener('profilesUpdated', handleProfilesUpdate);
+  }, [loadProfiles]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -92,12 +148,66 @@ const ProfileVerifier = () => {
                 <p className="text-sm text-gray-600">
                   Click on any profile to start verification
                 </p>
-              </div>
+</div>
+              
+              {/* Bulk Actions */}
+              {selectedProfiles.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <ApperIcon name="CheckSquare" size={16} className="text-blue-600" />
+                      <span className="text-sm font-medium text-blue-900">
+                        {selectedProfiles.length} profile{selectedProfiles.length > 1 ? 's' : ''} selected
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        onClick={() => handleBulkVerification("yes")}
+                        disabled={bulkLoading}
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm"
+                      >
+                        {bulkLoading ? (
+                          <ApperIcon name="Loader2" size={14} className="animate-spin mr-2" />
+                        ) : (
+                          <ApperIcon name="Check" size={14} className="mr-2" />
+                        )}
+                        Mark as Yes
+                      </Button>
+                      <Button
+                        onClick={() => handleBulkVerification("no")}
+                        disabled={bulkLoading}
+                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm"
+                      >
+                        {bulkLoading ? (
+                          <ApperIcon name="Loader2" size={14} className="animate-spin mr-2" />
+                        ) : (
+                          <ApperIcon name="X" size={14} className="mr-2" />
+                        )}
+                        Mark as No
+                      </Button>
+                      <Button
+                        onClick={() => setSelectedProfiles([])}
+                        variant="outline"
+                        className="px-4 py-2 text-sm"
+                      >
+                        Clear Selection
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
               
               <ProfileTable
                 profiles={profiles}
                 selectedProfile={selectedProfile}
                 onProfileSelect={handleProfileSelect}
+                selectedProfiles={selectedProfiles}
+                onSelectionChange={handleSelectionChange}
               />
             </motion.div>
           </div>

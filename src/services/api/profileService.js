@@ -176,7 +176,46 @@ class ProfileService {
   reset() {
     this.profiles = [];
     this.nextId = 1;
-    toast.info("Session reset");
+toast.info("Session reset");
+  }
+
+  async bulkUpdateVerificationStatus(profileIds, status) {
+    await this.delay(500);
+    
+    const updatedProfiles = [];
+    const errors = [];
+    
+    for (const id of profileIds) {
+      try {
+        const index = this.profiles.findIndex(p => p.Id === parseInt(id));
+        if (index === -1) {
+          errors.push(`Profile with ID ${id} not found`);
+          continue;
+        }
+        
+        this.profiles[index] = {
+          ...this.profiles[index],
+          verificationStatus: status,
+          verifiedAt: new Date().toISOString()
+        };
+        
+        updatedProfiles.push({ ...this.profiles[index] });
+      } catch (error) {
+        errors.push(`Failed to update profile ${id}: ${error.message}`);
+      }
+    }
+    
+    // Show appropriate notifications
+    if (updatedProfiles.length > 0) {
+      const statusText = status === "yes" ? "Match" : "No Match";
+      toast.success(`${updatedProfiles.length} profile${updatedProfiles.length > 1 ? 's' : ''} marked as: ${statusText}`);
+    }
+    
+    if (errors.length > 0) {
+      toast.error(`${errors.length} profile${errors.length > 1 ? 's' : ''} failed to update`);
+    }
+    
+    return updatedProfiles;
   }
 }
 
