@@ -110,8 +110,6 @@ verificationStatus: null,
       ...data,
       verifiedAt: new Date().toISOString()
     };
-    
-    return { ...this.profiles[index] };
 return { ...this.profiles[index] };
   }
 

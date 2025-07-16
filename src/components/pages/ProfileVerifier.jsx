@@ -10,6 +10,7 @@ import VerificationPanel from "@/components/organisms/VerificationPanel";
 import Header from "@/components/organisms/Header";
 import FileUpload from "@/components/molecules/FileUpload";
 import Button from "@/components/atoms/Button";
+import profileService from "@/services/api/profileService";
 
 const ProfileVerifier = () => {
     const {
@@ -88,15 +89,14 @@ const ProfileVerifier = () => {
                 status
             );
             
-            const updatedProfilesMap = new Map(updatedProfiles.map(p => [p.id, p]));
+const updatedProfilesMap = new Map(updatedProfiles.map(p => [p.id, p]));
             const newProfiles = profiles.map(p => updatedProfilesMap.get(p.id) || p);
             
             // Dispatch custom event to update profiles
-            const event = new CustomEvent('profilesUpdated', { detail: newProfiles });
+            const event = new window.CustomEvent('profilesUpdated', { detail: newProfiles });
             window.dispatchEvent(event);
             
             setSelectedProfiles([]);
-            
             const nextProfile = newProfiles.find(p => p.verificationStatus === 'pending');
             if (nextProfile) {
                 handleProfileSelect(nextProfile);
@@ -115,12 +115,9 @@ const ProfileVerifier = () => {
 const currentProfile = selectedProfile || profiles[currentIndex] || profiles[0];
 
     const handleKeyDown = (e) => {
-
-    const handleKeyDown = (e) => {
         if (e.key === 'ArrowLeft') handlePrevious();
         if (e.key === 'ArrowRight') handleNext();
     };
-
   return (
     <div className="min-h-screen bg-background">
       <Header 
