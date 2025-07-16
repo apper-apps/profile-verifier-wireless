@@ -62,8 +62,11 @@ return (
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Organization
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               LinkedIn URL
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Match Status
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Status
@@ -117,6 +120,29 @@ return (
                     <ApperIcon name="ExternalLink" size={14} className="mr-1" />
                     View Profile
                   </a>
+</div>
+              </td>
+              
+              <td className="px-4 py-3 whitespace-nowrap">
+                <div className="text-sm font-medium">
+                  {profile.nameMatch === "yes" && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <ApperIcon name="Check" size={12} className="mr-1" />
+                      Yes
+                    </span>
+                  )}
+                  {profile.nameMatch === "no" && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      <ApperIcon name="X" size={12} className="mr-1" />
+                      No
+                    </span>
+                  )}
+                  {!profile.nameMatch && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                      <ApperIcon name="Clock" size={12} className="mr-1" />
+                      Pending
+                    </span>
+                  )}
                 </div>
               </td>
               

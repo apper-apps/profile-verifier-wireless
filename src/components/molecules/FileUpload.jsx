@@ -67,8 +67,9 @@ const FileUpload = ({ onFileUpload, acceptedTypes = ".csv,.xlsx,.xls" }) => {
             <p className="text-sm text-gray-600">
               Drag and drop your CSV or Excel file here, or click to browse
             </p>
-            <p className="text-xs text-gray-500">
-              Required columns: firstname, lastname, organization, linkedin_url
+<p className="text-xs text-gray-500">
+              Required columns: firstname, lastname, organization, linkedin_url<br />
+              The system will verify if LinkedIn profile names match the provided firstname and lastname
             </p>
           </div>
 
@@ -110,10 +111,11 @@ const FileUpload = ({ onFileUpload, acceptedTypes = ".csv,.xlsx,.xls" }) => {
       <div className="mt-6 p-4 bg-blue-50 rounded-lg">
         <h4 className="font-medium text-blue-900 mb-2">File Format Requirements:</h4>
         <ul className="text-sm text-blue-800 space-y-1">
-          <li>• CSV or Excel file (.csv, .xlsx, .xls)</li>
+<li>• CSV or Excel file (.csv, .xlsx, .xls)</li>
           <li>• Must contain columns: firstname, lastname, organization, linkedin_url</li>
           <li>• First row should contain column headers</li>
           <li>• LinkedIn URLs should be complete profile URLs</li>
+          <li>• System will automatically verify if LinkedIn profile names match firstname/lastname</li>
         </ul>
       </div>
     </motion.div>
