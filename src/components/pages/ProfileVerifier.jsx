@@ -32,97 +32,94 @@ const ProfileVerifier = () => {
     const [selectedProfiles, setSelectedProfiles] = React.useState([]);
     const [bulkLoading, setBulkLoading] = React.useState(false);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <Loading message="Processing your file..." />
-      </div>
-    );
-  }
+    // All hooks must be called before any conditional returns
+    useEffect(() => {
+        const handleProfilesUpdate = (event) => {
+            // This would typically be handled by the verification session hook
+            // For now, we'll trigger a reload
+            loadProfiles();
+        };
+        
+        window.addEventListener('profilesUpdated', handleProfilesUpdate);
+        return () => window.removeEventListener('profilesUpdated', handleProfilesUpdate);
+    }, [loadProfiles]);
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <Error 
-          message={error} 
-          onRetry={loadProfiles}
-          onReset={handleReset}
-        />
-      </div>
-    );
-  }
-
-if (profiles.length === 0) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-6 py-8">
-          <Empty
-            title="Ready to verify profiles?"
-            description="Upload your CSV or Excel file with LinkedIn profile data to get started with verification."
-            actionLabel="Upload File"
-            onAction={() => document.getElementById("file-input")?.click()}
-          />
-          <div className="mt-8">
-            <FileUpload onFileUpload={handleFileUpload} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-  const handleBulkVerification = async (status) => {
-    if (selectedProfiles.length === 0) return;
-    
-    setBulkLoading(true);
-    try {
-      const { profileService } = await import("@/services/api/profileService");
-      const updatedProfiles = await profileService.default.bulkUpdateVerificationStatus(selectedProfiles, status);
-      
-      // Update profiles state
-      const updatedProfilesMap = new Map(updatedProfiles.map(p => [p.Id, p]));
-      const newProfiles = profiles.map(p => updatedProfilesMap.get(p.Id) || p);
-      
-      // Update the verification session with new profiles
-      const event = new CustomEvent('profilesUpdated', { detail: newProfiles });
-      window.dispatchEvent(event);
-      
-      // Clear selections
-      setSelectedProfiles([]);
-      
-      // Auto-advance to next unverified profile if current is in bulk update
-      if (selectedProfile && selectedProfiles.includes(selectedProfile.Id)) {
-        const nextProfile = newProfiles.find(p => 
-          !selectedProfiles.includes(p.Id) && !p.verificationStatus
+    // Conditional returns after all hooks
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-background">
+                <Header />
+                <Loading message="Processing your file..." />
+            </div>
         );
-        if (nextProfile) {
-          handleProfileSelect(nextProfile);
-        }
-      }
-      
-    } catch (err) {
-      console.error('Bulk verification failed:', err);
-    } finally {
-      setBulkLoading(false);
     }
-  };
 
-  const handleSelectionChange = (newSelectedProfiles) => {
-    setSelectedProfiles(newSelectedProfiles);
-  };
+    if (error) {
+        return (
+            <div className="min-h-screen bg-background">
+                <Header />
+                <Error message={error} onRetry={loadProfiles} onReset={handleReset} />
+            </div>
+        );
+    }
 
-  // Listen for profile updates from bulk operations
-  React.useEffect(() => {
-    const handleProfilesUpdate = (event) => {
-      // This would typically be handled by the verification session hook
-      // For now, we'll trigger a reload
-      loadProfiles();
+    if (!profiles || profiles.length === 0) {
+        return (
+            <div className="min-h-screen bg-background">
+                <Header />
+                <div className="max-w-4xl mx-auto px-4 py-8">
+                    <Empty onUpload={handleFileUpload} />
+                </div>
+            </div>
+        );
+    }
+
+    const handleSelectionChange = (newSelectedProfiles) => {
+        setSelectedProfiles(newSelectedProfiles);
     };
-    
-    window.addEventListener('profilesUpdated', handleProfilesUpdate);
-    return () => window.removeEventListener('profilesUpdated', handleProfilesUpdate);
-  }, [loadProfiles]);
+
+    const handleBulkVerification = async (status) => {
+        if (selectedProfiles.length === 0) return;
+        
+        setBulkLoading(true);
+        try {
+            const updatedProfiles = await profileService.bulkUpdateVerificationStatus(
+                selectedProfiles.map(p => p.id),
+                status
+            );
+            
+            const updatedProfilesMap = new Map(updatedProfiles.map(p => [p.id, p]));
+            const newProfiles = profiles.map(p => updatedProfilesMap.get(p.id) || p);
+            
+            // Dispatch custom event to update profiles
+            const event = new CustomEvent('profilesUpdated', { detail: newProfiles });
+            window.dispatchEvent(event);
+            
+            setSelectedProfiles([]);
+            
+            const nextProfile = newProfiles.find(p => p.verificationStatus === 'pending');
+            if (nextProfile) {
+                handleProfileSelect(nextProfile);
+            }
+        } catch (error) {
+            console.error('Bulk verification failed:', error);
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
+    const totalProfiles = profiles.length;
+    const completedProfiles = profiles.filter(p => p.verificationStatus !== 'pending').length;
+    const progress = totalProfiles > 0 ? (completedProfiles / totalProfiles) * 100 : 0;
+
+const currentProfile = selectedProfile || profiles[currentIndex] || profiles[0];
+
+    const handleKeyDown = (e) => {
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'ArrowLeft') handlePrevious();
+        if (e.key === 'ArrowRight') handleNext();
+    };
 
   return (
     <div className="min-h-screen bg-background">
